@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Mercado Turbo Analytics",
+  "description": "Painel de analise de categoria e concorrencia em anuncios do Mercado Livre.",
+  "version": "0.1.0",
+  "permissions": ["activeTab"],
+  "host_permissions": [
+    "https://api.mercadolibre.com/*",
+    "https://mercado-turbo-system.vercel.app/*",
+    "https://produto.mercadolivre.com.br/*",
+    "https://www.mercadolivre.com.br/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://produto.mercadolivre.com.br/*",
+        "https://www.mercadolivre.com.br/*"
+      ],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Mercado Turbo Analytics"
+  }
+}
