@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/auth/mercadolivre/start",
+      "destination": "/api/auth/mercadolivre/start"
+    },
+    {
+      "source": "/auth/mercadolivre/callback",
+      "destination": "/api/auth/mercadolivre/callback"
+    }
+  ]
+}
