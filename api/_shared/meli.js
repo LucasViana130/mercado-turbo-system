@@ -36,12 +36,24 @@ function buildAuthUrl() {
 
 async function fetchJson(url, options = {}) {
   const response = await fetch(url, options);
+
   const text = await response.text();
-  const data = text ? JSON.parse(text) : {};
+
+  let data = {};
+
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = { raw: text };
+  }
 
   if (!response.ok) {
-    const message = data.message || data.error_description || data.error || `HTTP ${response.status}`;
-    throw new Error(message);
+    console.error("========== ERRO MERCADO LIVRE ==========");
+    console.error("URL:", url);
+    console.error("Status:", response.status);
+    console.error("Resposta:", data);
+
+    throw new Error(data.message || data.error || JSON.stringify(data));
   }
 
   return data;
@@ -91,12 +103,11 @@ async function getMercadoLivreJson(path, accessToken) {
   return fetchJson(`${API_BASE}${path}`, { headers });
 }
 
-async function getCategoryProducts(categoryId, accessToken) {
+async function getCategoryProducts(categoryId) {
   const searches = await Promise.all(
     SEARCH_OFFSETS.map((offset) =>
       getMercadoLivreJson(
-        `/sites/${SITE_ID}/search?category=${encodeURIComponent(categoryId)}&limit=${SEARCH_LIMIT}&offset=${offset}`,
-        accessToken
+        `/sites/${SITE_ID}/search?category=${encodeURIComponent(categoryId)}&limit=${SEARCH_LIMIT}&offset=${offset}`
       )
     )
   );
@@ -110,11 +121,12 @@ async function analyzeItem(itemId, accessToken) {
     throw new Error("ID de anuncio invalido.");
   }
 
-  const item = await getMercadoLivreJson(`/items/${normalizedItemId}`, accessToken);
-  const [category, rawProducts] = await Promise.all([
-    getMercadoLivreJson(`/categories/${item.category_id}`, accessToken),
-    getCategoryProducts(item.category_id, accessToken)
-  ]);
+ const item = await getMercadoLivreJson(`/items/${normalizedItemId}`);
+
+const [category, rawProducts] = await Promise.all([
+  getMercadoLivreJson(`/categories/${item.category_id}`),
+  getCategoryProducts(item.category_id)
+]);
 
   const products = rawProducts
     .filter((result) => Number(result.price) > 0)
