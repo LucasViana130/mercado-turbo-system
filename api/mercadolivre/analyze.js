@@ -30,6 +30,7 @@ module.exports = async function handler(req, res) {
       ...data
     });
   } catch (error) {
+    console.error(error);
     sendJson(req, res, 500, {
       ok: false,
       error: error.message
