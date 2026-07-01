@@ -155,79 +155,31 @@ async function analyzeItem(itemId, accessToken) {
     .replace(/[^A-Z0-9]/gi, "")
     .toUpperCase();
 
-  if (!/^MLB\d{7,}$/.test(normalizedItemId)) {
-    throw new Error("ID de anuncio invalido.");
-  }
+  console.log("ITEM:", normalizedItemId);
 
-  console.log("1 - Buscando item");
+  console.log("===== TESTE ITEM =====");
   const item = await getMercadoLivreJson(`/items/${normalizedItemId}`);
+  console.log("OK ITEM");
 
-  console.log("2 - Buscando categoria");
+  console.log("===== TESTE CATEGORY =====");
   const category = await getMercadoLivreJson(`/categories/${item.category_id}`);
+  console.log("OK CATEGORY");
 
-  console.log("3 - Buscando anúncios");
-  const rawProducts = await getCategoryProducts(item.category_id);
-
-  console.log("4 - Produtos encontrados:", rawProducts.length);
-
-  const products = rawProducts
-    .filter(result => Number(result.price) > 0)
-    .map(result => ({
-      id: result.id,
-      title: result.title,
-      sellerId: result.seller?.id || result.seller_id,
-      sellerName:
-        result.seller?.nickname ||
-        `Vendedor ${result.seller?.id || result.seller_id || ""}`.trim(),
-      price: Number(result.price),
-      sold: Number(result.sold_quantity || 0),
-      currency: result.currency_id || item.currency_id || "BRL"
-    }));
-
-  const currency = item.currency_id || "BRL";
-
-  const prices = products.map(p => p.price);
-
-  const minPrice = prices.length ? Math.min(...prices) : 0;
-  const maxPrice = prices.length ? Math.max(...prices) : 0;
-
-  const average =
-    prices.reduce((a, b) => a + b, 0) / Math.max(prices.length, 1);
-
-  const sellers = new Map();
-
-  for (const p of products) {
-    if (!p.sellerId) continue;
-
-    const current = sellers.get(p.sellerId) || {
-      sellerId: p.sellerId,
-      sellerName: p.sellerName,
-      sold: 0,
-      listings: 0,
-      revenueEstimate: 0
-    };
-
-    current.sold += p.sold;
-    current.listings++;
-    current.revenueEstimate += p.price * p.sold;
-
-    sellers.set(p.sellerId, current);
-  }
-
-  const topSellers = [...sellers.values()]
-    .sort((a, b) => b.sold - a.sold)
-    .slice(0, 10);
+  console.log("===== TESTE SEARCH =====");
+  const search = await getMercadoLivreJson(
+    `/sites/MLB/search?category=${item.category_id}&limit=5`
+  );
+  console.log("OK SEARCH");
 
   return {
-    source: "public",
     item,
     category,
-    products,
-    topSellers,
-    currency,
-    average,
-    minPrice,
-    maxPrice
+    products: search.results || [],
+    topSellers: [],
+    currency: item.currency_id,
+    average: 0,
+    minPrice: 0,
+    maxPrice: 0
   };
 }
 module.exports = {
