@@ -26,7 +26,6 @@ function requireConfig() {
 }
 
 function buildAuthUrl() {
-function buildAuthUrl() {
   const { clientId, redirectUri } = requireConfig();
 
   console.log("CLIENT_ID =", JSON.stringify(clientId));
