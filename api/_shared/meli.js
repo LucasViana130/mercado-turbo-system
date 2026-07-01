@@ -110,8 +110,32 @@ async function refreshAccessToken(refreshToken) {
 }
 
 async function getMercadoLivreJson(path, accessToken) {
-  const headers = accessToken ? { authorization: `Bearer ${accessToken}` } : {};
-  return fetchJson(`${API_BASE}${path}`, { headers });
+  console.log("====================================");
+  console.log("PATH:", path);
+  console.log("TOKEN:", accessToken ? "SIM" : "NAO");
+
+  const headers = {
+    Accept: "application/json"
+  };
+
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  const response = await fetch(`${API_BASE}${path}`, {
+    headers
+  });
+
+  const text = await response.text();
+
+  console.log("STATUS:", response.status);
+  console.log("BODY:", text);
+
+  if (!response.ok) {
+    throw new Error(text);
+  }
+
+  return JSON.parse(text);
 }
 
 async function getCategoryProducts(categoryId) {
@@ -127,63 +151,76 @@ async function getCategoryProducts(categoryId) {
 }
 
 async function analyzeItem(itemId, accessToken) {
-  const normalizedItemId = String(itemId || "").replace(/[^A-Z0-9]/gi, "").toUpperCase();
+  const normalizedItemId = String(itemId || "")
+    .replace(/[^A-Z0-9]/gi, "")
+    .toUpperCase();
+
   if (!/^MLB\d{7,}$/.test(normalizedItemId)) {
     throw new Error("ID de anuncio invalido.");
   }
 
- const item = await getMercadoLivreJson(`/items/${normalizedItemId}`);
+  console.log("1 - Buscando item");
+  const item = await getMercadoLivreJson(`/items/${normalizedItemId}`);
 
-const [category, rawProducts] = await Promise.all([
-  getMercadoLivreJson(`/categories/${item.category_id}`),
-  getCategoryProducts(item.category_id)
-]);
+  console.log("2 - Buscando categoria");
+  const category = await getMercadoLivreJson(`/categories/${item.category_id}`);
+
+  console.log("3 - Buscando anúncios");
+  const rawProducts = await getCategoryProducts(item.category_id);
+
+  console.log("4 - Produtos encontrados:", rawProducts.length);
 
   const products = rawProducts
-    .filter((result) => Number(result.price) > 0)
-    .map((result) => ({
+    .filter(result => Number(result.price) > 0)
+    .map(result => ({
       id: result.id,
       title: result.title,
       sellerId: result.seller?.id || result.seller_id,
-      sellerName: result.seller?.nickname || `Vendedor ${result.seller?.id || result.seller_id || ""}`.trim(),
+      sellerName:
+        result.seller?.nickname ||
+        `Vendedor ${result.seller?.id || result.seller_id || ""}`.trim(),
       price: Number(result.price),
-      sold: Number(result.sold_quantity || result.seller?.transactions?.completed || 0),
+      sold: Number(result.sold_quantity || 0),
       currency: result.currency_id || item.currency_id || "BRL"
     }));
 
-  const currency = item.currency_id || products[0]?.currency || "BRL";
-  const prices = products.map((product) => product.price);
+  const currency = item.currency_id || "BRL";
+
+  const prices = products.map(p => p.price);
+
   const minPrice = prices.length ? Math.min(...prices) : 0;
   const maxPrice = prices.length ? Math.max(...prices) : 0;
-  const average = prices.reduce((sum, price) => sum + price, 0) / Math.max(prices.length, 1);
+
+  const average =
+    prices.reduce((a, b) => a + b, 0) / Math.max(prices.length, 1);
 
   const sellers = new Map();
-  for (const product of products) {
-    if (!product.sellerId) continue;
-    const current = sellers.get(product.sellerId) || {
-      sellerId: product.sellerId,
-      sellerName: product.sellerName,
+
+  for (const p of products) {
+    if (!p.sellerId) continue;
+
+    const current = sellers.get(p.sellerId) || {
+      sellerId: p.sellerId,
+      sellerName: p.sellerName,
       sold: 0,
       listings: 0,
       revenueEstimate: 0
     };
-    current.sold += product.sold;
-    current.listings += 1;
-    current.revenueEstimate += product.sold * product.price;
-    sellers.set(product.sellerId, current);
+
+    current.sold += p.sold;
+    current.listings++;
+    current.revenueEstimate += p.price * p.sold;
+
+    sellers.set(p.sellerId, current);
   }
 
   const topSellers = [...sellers.values()]
-    .sort((a, b) => b.sold - a.sold || b.revenueEstimate - a.revenueEstimate || b.listings - a.listings)
+    .sort((a, b) => b.sold - a.sold)
     .slice(0, 10);
 
   return {
-    source: accessToken ? "authenticated" : "public",
-    item: {
-      id: item.id,
-      title: item.title,
-      category_id: item.category_id
-    },
+    source: "public",
+    item,
     category,
     products,
     topSellers,
@@ -193,7 +230,6 @@ const [category, rawProducts] = await Promise.all([
     maxPrice
   };
 }
-
 module.exports = {
   buildAuthUrl,
   exchangeCodeForToken,
