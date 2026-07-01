@@ -27,10 +27,17 @@ function requireConfig() {
 
 function buildAuthUrl() {
   const { clientId, redirectUri } = requireConfig();
+
+  console.log("CLIENT ID:", JSON.stringify(clientId));
+  console.log("REDIRECT URI:", JSON.stringify(redirectUri));
+
   const url = new URL(`${AUTH_BASE}/authorization`);
   url.searchParams.set("response_type", "code");
   url.searchParams.set("client_id", clientId);
   url.searchParams.set("redirect_uri", redirectUri);
+
+  console.log("URL FINAL:", url.toString());
+
   return url.toString();
 }
 
