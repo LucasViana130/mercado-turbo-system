@@ -26,17 +26,22 @@ function requireConfig() {
 }
 
 function buildAuthUrl() {
+function buildAuthUrl() {
   const { clientId, redirectUri } = requireConfig();
 
-  console.log("CLIENT ID:", JSON.stringify(clientId));
-  console.log("REDIRECT URI:", JSON.stringify(redirectUri));
+  console.log("CLIENT_ID =", JSON.stringify(clientId));
+  console.log("REDIRECT_URI =", JSON.stringify(redirectUri));
+
+  const cleanRedirectUri = redirectUri.trim();
+
+  console.log("REDIRECT_URI LIMPA =", JSON.stringify(cleanRedirectUri));
 
   const url = new URL(`${AUTH_BASE}/authorization`);
   url.searchParams.set("response_type", "code");
   url.searchParams.set("client_id", clientId);
-  url.searchParams.set("redirect_uri", redirectUri);
+  url.searchParams.set("redirect_uri", cleanRedirectUri);
 
-  console.log("URL FINAL:", url.toString());
+  console.log("URL GERADA =", url.toString());
 
   return url.toString();
 }
