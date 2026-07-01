@@ -77,7 +77,7 @@ async function exchangeCodeForToken(code) {
     client_id: clientId,
     client_secret: clientSecret,
     code,
-    redirect_uri: redirectUri
+    redirect_uri: redirectUri.trim()
   });
 
   return fetchJson(`${API_BASE}/oauth/token`, {
