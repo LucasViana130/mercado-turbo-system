@@ -157,30 +157,35 @@ async function analyzeItem(itemId, accessToken) {
 
   console.log("ITEM:", normalizedItemId);
 
-  console.log("===== TESTE ITEM =====");
-  const item = await getMercadoLivreJson(`/items/${normalizedItemId}`);
-  console.log("OK ITEM");
+  try {
+    console.log(">>> /items");
+    const item = await getMercadoLivreJson(`/items/${normalizedItemId}`);
+    console.log("OK /items");
 
-  console.log("===== TESTE CATEGORY =====");
-  const category = await getMercadoLivreJson(`/categories/${item.category_id}`);
-  console.log("OK CATEGORY");
+    console.log(">>> /categories");
+    const category = await getMercadoLivreJson(`/categories/${item.category_id}`);
+    console.log("OK /categories");
 
-  console.log("===== TESTE SEARCH =====");
-  const search = await getMercadoLivreJson(
-    `/sites/MLB/search?category=${item.category_id}&limit=5`
-  );
-  console.log("OK SEARCH");
+    console.log(">>> /sites/MLB/search");
+    const search = await getMercadoLivreJson(
+      `/sites/MLB/search?category=${item.category_id}&limit=5`
+    );
+    console.log("OK /sites/MLB/search");
 
-  return {
-    item,
-    category,
-    products: search.results || [],
-    topSellers: [],
-    currency: item.currency_id,
-    average: 0,
-    minPrice: 0,
-    maxPrice: 0
-  };
+    return {
+      item,
+      category,
+      products: search.results || [],
+      topSellers: [],
+      currency: item.currency_id,
+      average: 0,
+      minPrice: 0,
+      maxPrice: 0
+    };
+  } catch (err) {
+    console.error("ERRO EM:", err);
+    throw err;
+  }
 }
 module.exports = {
   buildAuthUrl,
